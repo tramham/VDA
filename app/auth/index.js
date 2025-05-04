@@ -22,6 +22,7 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
+import apiClient from '../../api/client';
 
 
 // Login validation schema
@@ -44,34 +45,48 @@ export default function Login() {
     setIsSubmitting(true);
     setError(null);
     try {
+      // 1. Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      const idToken = await userCredential.user.getIdToken();
-  
-      // Send token to FastAPI backend
-      const response = await fetch("http://192.168.1.211:8001/users/me", {
-        method: "GET",
-        headers: {
-            Authorization: `Bearer ${idToken}`,
-        },
+      const user = userCredential.user;
+      
+      // 2. Get the Firebase ID token
+      const idToken = await user.getIdToken();
+      
+      // 3. Create/update user in our backend
+      try {
+        const response = await apiClient.get('/users/me', {
+          headers: {
+            Authorization: `Bearer ${idToken}`
+          }
         });
-  
-      if (!response.ok) {
-        const { detail } = await response.json();
-        throw new Error(detail || "Could not log in to backend.");
+        
+        // If we get here, the user exists in our database
+        console.log('User exists in backend:', response.data);
+      } catch (error) {
+        if (error.response?.status === 404) {
+          // User doesn't exist in our database, create them
+          const createResponse = await apiClient.post('/users/', {
+            email: user.email,
+            firebase_uid: user.uid
+          }, {
+            headers: {
+              Authorization: `Bearer ${idToken}`
+            }
+          });
+          console.log('Created user in backend:', createResponse.data);
+        } else {
+          throw error;
+        }
       }
-  
-      const userData = await response.json();
-      console.log("Logged in user:", userData);
-  
-      // Redirect to onboarding or home
-      router.replace("/onboarding");
+      
+      // 4. Navigate to the main app
+      router.replace('/(tabs)');
     } catch (error) {
-      console.error(error);
-      setError(error.message || "Login failed. Please try again.");
+      console.error('Login error:', error);
+      setError(error.message);
     } finally {
       setIsSubmitting(false);
     }
-  
   };
 
   return (
