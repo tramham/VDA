@@ -18,7 +18,7 @@ import {
 } from 'react-native-paper';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import Slider from '@react-native-community/slider';
+import Slider from '@miblanchard/react-native-slider';
 import apiClient from '../../api/client';
 import { auth } from '../../firebaseConfig';
 
@@ -286,42 +286,36 @@ export default function ProfileScreen() {
                   
                   <View style={styles.preferenceGroup}>
                     <Text style={styles.preferenceLabel}>Age Range</Text>
-                    <Slider
-                      style={styles.slider}
-                      minimumValue={18}
-                      maximumValue={100}
-                      step={1}
-                      value={[values.min_age_preference, values.max_age_preference]}
-                      onValueChange={(value) => {
-                        setFieldValue('min_age_preference', value[0]);
-                        setFieldValue('max_age_preference', value[1]);
-                      }}
-                      minimumTrackTintColor={theme.colors.primary}
-                      maximumTrackTintColor={theme.colors.outline}
-                      thumbTintColor={theme.colors.primary}
-                    />
-                    <View style={styles.sliderLabels}>
-                      <Text>{values.min_age_preference} years</Text>
-                      <Text>{values.max_age_preference} years</Text>
+                    <View style={styles.row}>
+                      <TextInput
+                        label="Min Age"
+                        value={values.min_age_preference?.toString()}
+                        onChangeText={(text) => setFieldValue('min_age_preference', Number(text))}
+                        keyboardType="numeric"
+                        style={[styles.input, styles.halfInput]}
+                        mode="outlined"
+                      />
+                      <TextInput
+                        label="Max Age"
+                        value={values.max_age_preference?.toString()}
+                        onChangeText={(text) => setFieldValue('max_age_preference', Number(text))}
+                        keyboardType="numeric"
+                        style={[styles.input, styles.halfInput]}
+                        mode="outlined"
+                      />
                     </View>
                   </View>
 
                   <View style={styles.preferenceGroup}>
                     <Text style={styles.preferenceLabel}>Maximum Distance</Text>
-                    <Slider
-                      style={styles.slider}
-                      minimumValue={1}
-                      maximumValue={100}
-                      step={1}
-                      value={values.max_distance}
-                      onValueChange={(value) => setFieldValue('max_distance', value)}
-                      minimumTrackTintColor={theme.colors.primary}
-                      maximumTrackTintColor={theme.colors.outline}
-                      thumbTintColor={theme.colors.primary}
+                    <TextInput
+                      label="Max Distance (miles)"
+                      value={values.max_distance?.toString()}
+                      onChangeText={(text) => setFieldValue('max_distance', Number(text))}
+                      keyboardType="numeric"
+                      style={styles.input}
+                      mode="outlined"
                     />
-                    <View style={styles.sliderLabels}>
-                      <Text>{values.max_distance} miles</Text>
-                    </View>
                   </View>
 
                   <TextInput
@@ -467,5 +461,12 @@ const styles = StyleSheet.create({
   preferenceLabel: {
     fontSize: 16,
     marginBottom: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  halfInput: {
+    width: '48%',
   },
 }); 

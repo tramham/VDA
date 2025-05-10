@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Button, Chip } from 'react-native-paper';
 import { router } from 'expo-router';
+import { auth } from '../../firebaseConfig';
+import apiClient from '../../api/client';
 
 export default function Preferences() {
   const [selectedInterests, setSelectedInterests] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   
   const interests = [
     'Travel', 'Fitness', 'Reading', 'Cooking', 'Movies',
@@ -20,8 +24,36 @@ export default function Preferences() {
     }
   };
   
-  const handleNext = () => {
-    router.push('/onboarding/schedule-setup');
+  const handleNext = async () => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      const idToken = await user.getIdToken();
+      
+      // Update user preferences in backend
+      await apiClient.put('/users/me/preferences', {
+        interests: selectedInterests,
+        preferred_gender: 'any', // TODO: Add gender preference selection
+        min_age_preference: 18, // TODO: Add age range selection
+        max_age_preference: 99
+      }, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+
+      router.push('/onboarding/schedule-setup');
+    } catch (error) {
+      console.error(error);
+      setError('Failed to save preferences: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   return (
@@ -29,6 +61,10 @@ export default function Preferences() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>Your Interests</Text>
         <Text style={styles.subtitle}>Select topics you enjoy talking about</Text>
+        
+        {error && (
+          <Text style={styles.errorText}>{error}</Text>
+        )}
         
         <View style={styles.interestsContainer}>
           {interests.map(interest => (
@@ -60,6 +96,8 @@ export default function Preferences() {
             mode="contained"
             onPress={handleNext}
             style={styles.button}
+            loading={isSubmitting}
+            disabled={isSubmitting}
           >
             Next
           </Button>
@@ -110,4 +148,8 @@ const styles = StyleSheet.create({
   button: {
     width: '48%',
   },
+  errorText: {
+    color: 'red',
+    marginBottom: 20,
+  }
 });

@@ -21,6 +21,7 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
+import apiClient from '../../api/client';
 
 // Registration validation schema
 const RegisterSchema = Yup.object().shape({
@@ -46,13 +47,45 @@ export default function Register() {
     setIsSubmitting(true);
     setError(null);
     try {
+      console.log('Starting registration process...');
+      
       // Create user with Firebase
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
+      console.log('Creating Firebase user...');
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      console.log('Firebase user created successfully');
+      
+      const idToken = await userCredential.user.getIdToken();
+      console.log('Got Firebase ID token');
+
+      // Register user in our backend
+      console.log('Registering user in backend...');
+      console.log('API URL:', apiClient.defaults.baseURL);
+      const response = await apiClient.post('/auth/register', {
+        email: values.email
+      }, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      console.log('Backend registration response:', response.data);
       
       // Redirect to onboarding after successful signup
       router.replace('/onboarding');
     } catch (error) {
-      console.error(error);
+      console.error('Registration error:', error);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('Error request:', error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error message:', error.message);
+      }
       setError('Registration failed: ' + error.message);
     } finally {
       setIsSubmitting(false);
@@ -171,6 +204,16 @@ export default function Register() {
             </TouchableOpacity>
           </Link>
         </View>
+
+        <View style={styles.testApiLink}>
+          <Link href="/test-api" asChild>
+            <TouchableOpacity>
+              <Text style={{ color: theme.colors.primary }}>
+                Test API Connection
+              </Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -218,5 +261,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 20,
+  },
+  testApiLink: {
+    marginTop: 20,
+    alignItems: 'center',
   },
 });

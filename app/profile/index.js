@@ -18,6 +18,7 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import apiClient from '../../api/client';
 import { auth } from '../../firebaseConfig';
+import Slider from '@react-native-community/slider';
 
 // Profile validation schema
 const ProfileSchema = Yup.object().shape({
@@ -42,6 +43,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [ageRange, setAgeRange] = useState([18, 100]);
 
   useEffect(() => {
     fetchProfile();
@@ -193,32 +195,28 @@ export default function ProfileScreen() {
                 )}
 
                 <TextInput
-                  label="Minimum Age Preference"
-                  value={values.min_age_preference?.toString()}
-                  onChangeText={handleChange('min_age_preference')}
-                  onBlur={handleBlur('min_age_preference')}
-                  error={touched.min_age_preference && errors.min_age_preference}
-                  keyboardType="numeric"
+                  label="Age Preference Range"
+                  value={`${values.min_age_preference} - ${values.max_age_preference}`}
                   style={styles.input}
                   mode="outlined"
+                  editable={false}
                 />
-                {touched.min_age_preference && errors.min_age_preference && (
-                  <HelperText type="error">{errors.min_age_preference}</HelperText>
-                )}
 
-                <TextInput
-                  label="Maximum Age Preference"
-                  value={values.max_age_preference?.toString()}
-                  onChangeText={handleChange('max_age_preference')}
-                  onBlur={handleBlur('max_age_preference')}
-                  error={touched.max_age_preference && errors.max_age_preference}
-                  keyboardType="numeric"
-                  style={styles.input}
-                  mode="outlined"
+                <Slider
+                  style={styles.slider}
+                  minimumValue={18}
+                  maximumValue={100}
+                  value={ageRange}
+                  onValueChange={(value) => {
+                    setAgeRange(value);
+                    handleChange('min_age_preference')(value[0]);
+                    handleChange('max_age_preference')(value[1]);
+                  }}
+                  step={1}
+                  minimumTrackTintColor="#0000FF"
+                  maximumTrackTintColor="#000000"
+                  thumbTintColor="#0000FF"
                 />
-                {touched.max_age_preference && errors.max_age_preference && (
-                  <HelperText type="error">{errors.max_age_preference}</HelperText>
-                )}
 
                 <Button
                   mode="contained"
@@ -266,5 +264,10 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 20,
     paddingVertical: 8,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+    marginBottom: 10,
   },
 }); 
