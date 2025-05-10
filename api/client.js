@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { auth } from '../firebaseConfig';
 
-// Use the IP address of your machine instead of localhost
-const API_BASE_URL = 'http://192.168.1.143:8000';  // Your computer's IP address
+// Use localhost since we're running both frontend and backend locally
+const API_BASE_URL = 'http://localhost:8000';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
